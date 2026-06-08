@@ -222,6 +222,7 @@ export default function Success() {
       return;
     }
 
+    // Se não estiver no storage, tentamos gerar via API (apenas se necessário)
     async function gen() {
       setPixLoading(true);
       setPixError(null);
@@ -243,6 +244,9 @@ export default function Success() {
   // ── Poll payment status once we have a transactionId ──
   useEffect(() => {
     if (!pixData?.transactionId || paymentConfirmed) return;
+    
+    // Se for um pagamento direto via chave manual, não temos como verificar via API
+    if (pixData.transactionId.startsWith('direct_')) return;
 
     async function checkStatus() {
       if (!pixData?.transactionId) return;
@@ -596,13 +600,20 @@ export default function Success() {
             {pixData && !pixLoading && (
               <div className="space-y-4">
                 {/* Polling status indicator */}
-                <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-                  <span className="relative flex h-2.5 w-2.5 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
-                  </span>
-                  <p className="text-xs text-amber-700 font-medium">Aguardando confirmação do pagamento...</p>
-                </div>
+                {!pixData.transactionId?.startsWith('direct_') ? (
+                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+                    </span>
+                    <p className="text-xs text-amber-700 font-medium">Aguardando confirmação do pagamento...</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                    <AlertCircle className="w-4 h-4 text-blue-500 shrink-0" />
+                    <p className="text-xs text-blue-700 font-medium">Após pagar, seu pedido será processado manualmente.</p>
+                  </div>
+                )}
 
                 {/* QR Code Section */}
                 {qrSrc && (
@@ -628,12 +639,15 @@ export default function Success() {
                         <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Aguardando Pagamento</span>
                       </div>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-8 font-medium">Escaneie com o app do seu banco</p>
+                    <div className="flex flex-col items-center mt-8 gap-1">
+                      <p className="text-sm text-gray-800 font-bold">Escaneie com a câmera do banco</p>
+                      <p className="text-xs text-gray-500 font-medium italic">ou copie o código</p>
+                    </div>
                   </div>
                 )}
 
                 {/* Pix code box - Modern glassmorphism style */}
-                <div className="relative mt-4">
+                <div className="relative mt-2">
                   <div className="absolute inset-0 bg-green-50/30 blur-xl rounded-full" />
                   <div className="relative bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-4 overflow-hidden">
                     <div className="flex justify-between items-center mb-2">
@@ -659,7 +673,7 @@ export default function Success() {
                 <button
                   onClick={handleCopy}
                   className="group relative w-full h-14 overflow-hidden rounded-2xl font-black text-base text-white transition-all active:scale-[0.98] shadow-[0_10px_30px_rgba(22,163,74,0.25)]"
-                  style={{ background: copied ? "#16a34a" : "linear-gradient(135deg, #22c55e, #15803d)" }}
+                  style={{ background: "#22c55e" }}
                 >
                   <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="relative flex items-center justify-center gap-3">
