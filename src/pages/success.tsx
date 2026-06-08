@@ -597,19 +597,17 @@ export default function Success() {
               <div className="space-y-4">
                 {/* QR Code Section */}
                 {qrSrc && (
-                  <div className="flex flex-col items-center">
-                    <div className="relative mb-6">
-                      {/* Aguardando confirmação do pagamento above QR */}
-                      <div className="flex flex-col items-center mb-6">
-                        <div className="bg-orange-50 border border-orange-100 rounded-full px-5 py-2 flex items-center gap-3">
-                          <div className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
-                          </div>
-                          <span className="text-sm font-medium text-orange-800">Aguardando confirmação do pagamento...</span>
-                        </div>
+                  <div className="flex flex-col items-center w-full">
+                    {/* Aguardando confirmação do pagamento above QR */}
+                    <div className="bg-orange-50 border border-orange-100 rounded-full px-4 py-1.5 flex items-center gap-2 mb-4 whitespace-nowrap">
+                      <div className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500" />
                       </div>
+                      <span className="text-[13px] font-medium text-orange-800">Aguardando confirmação do pagamento...</span>
+                    </div>
 
+                    <div className="relative mb-4">
                       <div className="border-2 border-green-100 rounded-2xl p-3 bg-white shadow-sm inline-block relative">
                         {/* Green corners */}
                         <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-green-500 rounded-tl-lg" />
@@ -619,19 +617,18 @@ export default function Success() {
                         
                         <img src={qrSrc} alt="QR Code PIX" className="w-52 h-52 object-contain" />
                       </div>
-                      
-                      {/* Polling status indicator below QR code with green theme matching the top badge style */}
-                      <div className="flex flex-col items-center mt-6">
-                        <div className="bg-green-50 border border-green-100 rounded-full px-5 py-2 flex items-center gap-3">
-                          <div className="relative flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
-                          </div>
-                          <span className="text-sm font-bold uppercase tracking-wider text-green-600">Aguardando Pagamento</span>
-                        </div>
-                      </div>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-2 font-normal">Escaneie com a câmera do banco</p>
+                    
+                    {/* Polling status indicator below QR code */}
+                    <div className="bg-green-50 border border-green-100 rounded-full px-4 py-1.5 flex items-center gap-2 mb-3">
+                      <div className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                      </div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-green-600">Aguardando Pagamento</span>
+                    </div>
+
+                    <p className="text-[11px] text-gray-400 font-normal">Escaneie com a câmera do banco</p>
                   </div>
                 )}
 
