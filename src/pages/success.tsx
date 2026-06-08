@@ -595,22 +595,32 @@ export default function Success() {
 
             {pixData && !pixLoading && (
               <div className="space-y-4">
-                {/* Polling status indicator */}
-                <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5 mb-2">
-                  <span className="relative flex h-2.5 w-2.5 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
-                  </span>
-                  <p className="text-xs text-amber-700 font-medium">Aguardando confirmação do pagamento...</p>
-                </div>
-
-                {/* QR Code */}
+                {/* QR Code Section */}
                 {qrSrc && (
                   <div className="flex flex-col items-center">
-                    <div className="border-2 border-green-100 rounded-2xl p-3 bg-white shadow-sm inline-block">
-                      <img src={qrSrc} alt="QR Code PIX" className="w-52 h-52 object-contain" />
+                    <div className="relative mb-6">
+                      <div className="border-2 border-green-100 rounded-2xl p-3 bg-white shadow-sm inline-block relative">
+                        {/* Green corners */}
+                        <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-green-500 rounded-tl-lg" />
+                        <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-green-500 rounded-tr-lg" />
+                        <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-green-500 rounded-bl-lg" />
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-green-500 rounded-br-lg" />
+                        
+                        <img src={qrSrc} alt="QR Code PIX" className="w-52 h-52 object-contain" />
+                      </div>
+                      
+                      {/* Polling status indicator moved below QR code with green text */}
+                      <div className="flex flex-col items-center gap-1.5 mt-4">
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-2 w-2 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                          </span>
+                          <p className="text-sm text-green-600 font-bold uppercase tracking-wider">Aguardando Pagamento</p>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-2.5 font-normal">Escaneie com a Câmera do banco ou copie o código pronto.</p>
+                    <p className="text-[11px] text-gray-400 mt-2 font-normal">Escaneie com a Câmera do banco ou copie o código pronto.</p>
                   </div>
                 )}
 
