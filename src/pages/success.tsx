@@ -640,8 +640,8 @@ export default function Success() {
                       </div>
                     </div>
                     <div className="flex flex-col items-center mt-8 gap-1">
-                      <p className="text-sm text-gray-800 font-bold">Escaneie com a câmera do banco</p>
-                      <p className="text-xs text-gray-500 font-medium italic">ou copie o código</p>
+                      <p className="text-sm text-gray-500 font-bold">Escaneie com a câmera do banco</p>
+                      <p className="text-xs text-gray-800 font-medium">ou copie o código</p>
                     </div>
                   </div>
                 )}
