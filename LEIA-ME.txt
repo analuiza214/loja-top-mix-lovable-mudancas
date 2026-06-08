@@ -1,0 +1,29 @@
+TOPMIX BRASIL — Arquivos Completos para GitHub/Netlify
+  =======================================================
+
+  COMO USAR:
+  1. Substitua/insira TODOS os arquivos deste ZIP no seu repositório GitHub
+     mantendo a mesma estrutura de pastas.
+
+  2. ARQUIVO NOVO (não existe no seu projeto ainda):
+     → src/lib/supabase.ts  (crie a pasta lib dentro de src se não existir)
+
+  3. Rode no terminal do projeto:
+     npm install
+     (isso vai instalar o @supabase/supabase-js que foi adicionado ao package.json)
+
+  4. No Netlify → Site configuration → Environment variables, adicione:
+     VITE_SUPABASE_URL = https://vjinnrfidevofsanxhdu.supabase.co
+     VITE_SUPABASE_KEY = sb_publishable_pI0zi4rnzyjUm20NtUTfYQ_LtYZBUk-
+
+  5. Faça o deploy no Netlify normalmente (push no GitHub ou drag & drop).
+
+  PAINEL DE CONTATOS:
+  → Acesse seusite.com/admin para ver todos os clientes que fizeram checkout.
+
+  ARQUIVOS EDITADOS NESTA VERSÃO:
+  ★ src/lib/supabase.ts     — NOVO (cliente Supabase)
+  ★ src/pages/checkout.tsx  — Salva lead no Supabase ao finalizar
+  ★ src/pages/admin.tsx     — Lê leads do Supabase
+  ★ package.json            — Adicionado @supabase/supabase-js
+  
