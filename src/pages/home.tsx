@@ -707,7 +707,7 @@ export default function Home() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
               { mediaId: "h9j9o2l9vc", aspect: 0.5625, name: "Vanessa Santos", city: "São Paulo, SP", stars: 5 },
-              { mediaId: "p8ikrk6u0t", aspect: 0.5625, name: "Roberta Soares", city: "Rio de Janeiro, RJ", stars: 5 },
+              { mediaId: "yq0hnqjl7y", aspect: 0.5625, name: "Maria Oliveira", city: "Porto Alegre, RS", stars: 5 },
               { mediaId: "egdiv3fvbn", aspect: 0.75,   name: "Ana Lima",        city: "Belo Horizonte, MG", stars: 5 },
               { mediaId: "4jk3s1rj65", aspect: 0.75,   name: "Patrícia Mendes", city: "Curitiba, PR", stars: 5 },
             ].map((dep) => (

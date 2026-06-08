@@ -26,9 +26,9 @@ export default function FaleConosco() {
       icone: MessageCircle,
       titulo: "WhatsApp",
       descricao: "Atendimento rápido de seg. a sáb.",
-      detalhe: "(11) 99999-0000",
+      detalhe: "(83) 99138-0581",
       cor: "#25D366",
-      href: "https://wa.me/5511999990000",
+      href: "https://wa.me/5583991380581",
     },
     {
       icone: Mail,

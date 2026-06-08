@@ -222,7 +222,6 @@ export default function Success() {
       return;
     }
 
-    // Se não estiver no storage, tentamos gerar via API (apenas se necessário)
     async function gen() {
       setPixLoading(true);
       setPixError(null);
@@ -244,9 +243,6 @@ export default function Success() {
   // ── Poll payment status once we have a transactionId ──
   useEffect(() => {
     if (!pixData?.transactionId || paymentConfirmed) return;
-    
-    // Se for um pagamento direto via chave manual, não temos como verificar via API
-    if (pixData.transactionId.startsWith('direct_')) return;
 
     async function checkStatus() {
       if (!pixData?.transactionId) return;
@@ -600,92 +596,56 @@ export default function Success() {
             {pixData && !pixLoading && (
               <div className="space-y-4">
                 {/* Polling status indicator */}
-                {!pixData.transactionId?.startsWith('direct_') ? (
-                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-                    <span className="relative flex h-2.5 w-2.5 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
-                    </span>
-                    <p className="text-xs text-amber-700 font-medium">Aguardando confirmação do pagamento...</p>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
-                    <AlertCircle className="w-4 h-4 text-blue-500 shrink-0" />
-                    <p className="text-xs text-blue-700 font-medium">Após pagar, seu pedido será processado manualmente.</p>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5 mb-2">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+                  </span>
+                  <p className="text-xs text-amber-700 font-medium">Aguardando confirmação do pagamento...</p>
+                </div>
 
-                {/* QR Code Section */}
+                {/* QR Code */}
                 {qrSrc && (
                   <div className="flex flex-col items-center">
-                    <div className="relative p-2 rounded-[2rem] bg-gradient-to-tr from-green-500/10 via-transparent to-green-500/5 ring-1 ring-green-100/50">
-                      <div className="relative bg-white p-4 rounded-[1.5rem] shadow-[0_20px_50px_rgba(22,163,74,0.12)] border border-green-50">
-                        {/* Decorative corners */}
-                        <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-green-500 rounded-tl-xl" />
-                        <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-green-500 rounded-tr-xl" />
-                        <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-green-500 rounded-bl-xl" />
-                        <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-green-500 rounded-br-xl" />
-                        
-                        <img 
-                          src={qrSrc} 
-                          alt="QR Code PIX" 
-                          className="w-56 h-56 object-contain relative z-10" 
-                        />
-                      </div>
-                      
-                      {/* Floating status badge */}
-                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1.5 rounded-full shadow-lg border border-green-100 flex items-center gap-2 whitespace-nowrap">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Aguardando Pagamento</span>
-                      </div>
+                    <div className="border-2 border-green-100 rounded-2xl p-3 bg-white shadow-sm inline-block">
+                      <img src={qrSrc} alt="QR Code PIX" className="w-52 h-52 object-contain" />
                     </div>
-                    <div className="flex flex-col items-center mt-8 gap-1">
-                      <p className="text-sm text-gray-500 font-bold">Escaneie com a câmera do banco</p>
-                      <p className="text-xs text-gray-800 font-medium">ou copie o código</p>
-                    </div>
+                    <p className="text-[11px] text-gray-400 mt-2.5 font-normal">Escaneie com a Câmera do banco ou copie o código pronto.</p>
                   </div>
                 )}
 
-                {/* Pix code box - Modern glassmorphism style */}
-                <div className="relative mt-2">
-                  <div className="absolute inset-0 bg-green-50/30 blur-xl rounded-full" />
-                  <div className="relative bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-4 overflow-hidden">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Pix Copia e Cola</p>
-                      <div className="flex gap-0.5">
-                        <div className="w-1 h-1 rounded-full bg-gray-200" />
-                        <div className="w-1 h-1 rounded-full bg-gray-200" />
-                        <div className="w-1 h-1 rounded-full bg-gray-200" />
-                      </div>
-                    </div>
-                    <p className="text-xs font-mono text-gray-600 break-all leading-relaxed line-clamp-2 select-all pr-2">
-                      {pixData.pixCode}
-                    </p>
-                  </div>
+                {/* Divider */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-gray-100" />
+                  <span className="text-xs text-gray-400 font-medium">ou copie o código</span>
+                  <div className="flex-1 h-px bg-gray-100" />
                 </div>
 
-                {/* Countdown with progress vibe */}
-                <div className="py-2">
-                  <Countdown seconds={30 * 60} />
+                {/* Pix code box */}
+                <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1.5">Pix Copia e Cola</p>
+                  <p className="text-xs font-mono text-gray-500 break-all leading-relaxed line-clamp-3 select-all">
+                    {pixData.pixCode}
+                  </p>
                 </div>
 
-                {/* Copy button - Larger and more prominent */}
+                {/* Countdown */}
+                <Countdown seconds={30 * 60} />
+
+                {/* Copy button */}
                 <button
                   onClick={handleCopy}
-                  className="group relative w-full h-14 overflow-hidden rounded-2xl font-black text-base text-white transition-all active:scale-[0.98] shadow-[0_10px_30px_rgba(22,163,74,0.25)]"
-                  style={{ background: "#22c55e" }}
+                  className="w-full h-13 py-3.5 rounded-xl font-bold text-base text-white flex items-center justify-center gap-2.5 transition-all hover:opacity-90 active:scale-[0.98] shadow-md shadow-green-200"
+                  style={{ background: copied ? "#16a34a" : "linear-gradient(135deg, #22c55e, #16a34a)" }}
                 >
-                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative flex items-center justify-center gap-3">
-                    {copied
-                      ? <><CheckCheck className="w-6 h-6" /> Código copiado!</>
-                      : <><Copy className="w-5 h-5 group-hover:scale-110 transition-transform" /> Copiar código Pix</>}
-                  </div>
+                  {copied
+                    ? <><CheckCheck className="w-5 h-5" /> Código copiado!</>
+                    : <><Copy className="w-5 h-5" /> Copiar código Pix</>}
                 </button>
 
                 <button
                   onClick={() => setLocation("/")}
-                  className="w-full text-gray-400 font-bold text-xs text-center py-2 hover:text-gray-600 transition-colors uppercase tracking-widest"
+                  className="w-full text-gray-400 font-medium text-sm text-center py-1 hover:text-gray-600 transition-colors"
                 >
                   Voltar à loja
                 </button>
