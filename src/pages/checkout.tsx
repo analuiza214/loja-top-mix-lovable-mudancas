@@ -35,6 +35,33 @@ function formatExpiry(v: string) {
   return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
 }
 
+// ── Algoritmo de Luhn — verifica se o número de cartão é matematicamente válido ──
+function luhn(num: string): boolean {
+  const digits = num.replace(/\D/g, "");
+  if (digits.length < 13) return false;
+  let sum = 0;
+  let isEven = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let d = parseInt(digits[i], 10);
+    if (isEven) { d *= 2; if (d > 9) d -= 9; }
+    sum += d;
+    isEven = !isEven;
+  }
+  return sum % 10 === 0;
+}
+
+// ── Detecção de bandeira pelo início do número ──
+function detectCardBrand(num: string): { name: string; color: string } | null {
+  const d = num.replace(/\D/g, "");
+  if (!d) return null;
+  if (/^4/.test(d)) return { name: "Visa", color: "#1A1F71" };
+  if (/^5[1-5]/.test(d) || /^2[2-7]/.test(d)) return { name: "Mastercard", color: "#EB001B" };
+  if (/^3[47]/.test(d)) return { name: "Amex", color: "#007BC1" };
+  if (/^(?:636368|438935|504175|451416|636297|5067|4576|4011)/.test(d)) return { name: "Elo", color: "#00A4E0" };
+  if (/^(?:606282|3841)/.test(d)) return { name: "Hipercard", color: "#B3131B" };
+  return null;
+}
+
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const { items, total, pixTotal, clearCart } = useCart();
@@ -137,10 +164,22 @@ export default function Checkout() {
     if (!address.estado) errors.estado = "Obrigatório";
 
     if (paymentMethod === "card") {
-      if (card.numero.replace(/\s/g, "").length < 13) errors.cardNumero = "Número inválido";
+      if (!luhn(card.numero)) errors.cardNumero = "Número de cartão inválido";
       if (!card.nome.trim()) errors.cardNome = "Obrigatório";
-      if (card.validade.length < 5) errors.cardValidade = "Inválida";
-      if (card.cvv.length < 3) errors.cardCvv = "Inválido";
+      if (card.validade.length < 5) {
+        errors.cardValidade = "Data inválida";
+      } else {
+        const [mm, yy] = card.validade.split("/").map(Number);
+        const now = new Date();
+        const curYear = now.getFullYear() % 100;
+        const curMonth = now.getMonth() + 1;
+        if (mm < 1 || mm > 12) {
+          errors.cardValidade = "Mês inválido";
+        } else if (yy < curYear || (yy === curYear && mm < curMonth)) {
+          errors.cardValidade = "Cartão vencido";
+        }
+      }
+      if (card.cvv.length < 3) errors.cardCvv = "CVV inválido";
     }
 
     setFormErrors(errors);
@@ -554,13 +593,36 @@ export default function Checkout() {
                       <div className="mx-3.5 mb-3.5 space-y-3">
                         <div className="space-y-1.5">
                           <Label className="text-xs font-semibold text-gray-700">Número do Cartão *</Label>
-                          <Input
-                            placeholder="0000 0000 0000 0000"
-                            value={card.numero}
-                            onChange={e => setCard(c => ({ ...c, numero: formatCard(e.target.value) }))}
-                            className={`h-11 text-sm bg-white ${formErrors.cardNumero ? "border-red-400" : ""}`}
-                          />
-                          {formErrors.cardNumero && <p className="text-xs text-red-500">{formErrors.cardNumero}</p>}
+                          <div className="relative">
+                            <Input
+                              placeholder="0000 0000 0000 0000"
+                              value={card.numero}
+                              inputMode="numeric"
+                              onChange={e => setCard(c => ({ ...c, numero: formatCard(e.target.value) }))}
+                              className={`h-11 text-sm bg-white pr-20 ${formErrors.cardNumero ? "border-red-400" : card.numero && luhn(card.numero) ? "border-green-400" : ""}`}
+                            />
+                            {/* Badge de bandeira em tempo real */}
+                            {(() => {
+                              const brand = detectCardBrand(card.numero);
+                              if (!brand) return null;
+                              return (
+                                <span
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                                  style={{ background: brand.color }}
+                                >
+                                  {brand.name}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                          {formErrors.cardNumero && (
+                            <p className="text-xs text-red-500 flex items-center gap-1">
+                              ✕ {formErrors.cardNumero}
+                            </p>
+                          )}
+                          {!formErrors.cardNumero && card.numero && luhn(card.numero) && (
+                            <p className="text-xs text-green-600 flex items-center gap-1">✓ Número válido</p>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
@@ -576,9 +638,9 @@ export default function Checkout() {
                           <div className="space-y-1.5">
                             <Label className="text-xs font-semibold text-gray-700">CVV *</Label>
                             <Input
-                              placeholder="123" type="password" maxLength={4}
+                              placeholder="123" type="password" maxLength={3} inputMode="numeric"
                               value={card.cvv}
-                              onChange={e => setCard(c => ({ ...c, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                              onChange={e => setCard(c => ({ ...c, cvv: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
                               className={`h-11 text-sm bg-white ${formErrors.cardCvv ? "border-red-400" : ""}`}
                             />
                             {formErrors.cardCvv && <p className="text-xs text-red-500">{formErrors.cardCvv}</p>}
