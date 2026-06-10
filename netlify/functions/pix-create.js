@@ -1,104 +1,68 @@
-const https = require("https");
+import { Handler } from "@netlify/functions";
 
-function httpsRequest(method, url, data, headers) {
-  return new Promise((resolve, reject) => {
-    const parsed = new URL(url);
-    const body = data ? JSON.stringify(data) : null;
-    const options = {
-      hostname: parsed.hostname,
-      path: parsed.pathname + parsed.search,
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(body ? { "Content-Length": Buffer.byteLength(body) } : {}),
-        ...headers,
-      },
-    };
-    const req = https.request(options, (res) => {
-      let raw = "";
-      res.on("data", (chunk) => (raw += chunk));
-      res.on("end", () => {
-        try {
-          resolve({ status: res.statusCode, body: JSON.parse(raw) });
-        } catch {
-          resolve({ status: res.statusCode, body: raw });
-        }
-      });
-    });
-    req.on("error", reject);
-    if (body) req.write(body);
-    req.end();
-  });
-}
-
-exports.handler = async (event) => {
+export const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
+    return { statusCode: 405, body: "Method Not Allowed" };
   }
-
-  // Novas chaves da MisticPay que você deve configurar na Netlify
-  const clientId = process.env.MISTICPAY_CLIENT_ID;
-  const clientSecret = process.env.MISTICPAY_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Configuração incompleta: MisticPay credentials missing." }),
-    };
-  }
-
-  let body;
-  try {
-    body = JSON.parse(event.body || "{}");
-  } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: "JSON inválido." }) };
-  }
-
-  const { amount, name, cpf, transactionId, productName } = body;
-
-  const payload = {
-    amount: Number(amount),
-    payerName: String(name),
-    payerDocument: String(cpf || "").replace(/\D/g, ""), // Remove pontos e traços do CPF
-    transactionId: String(transactionId || `order_${Date.now()}`),
-    description: productName || "Compra na Loja",
-  };
 
   try {
-    const apiUrl = "https://api.misticpay.com/api/transactions/create";
-    
-    // Autenticação da MisticPay via headers ci e cs
-    const result = await httpsRequest("POST", apiUrl, payload, {
-      "ci": clientId,
-      "cs": clientSecret
-    });
+    const { name, email, phone, cpf, amount, transactionId, productName } = JSON.parse(event.body || "{}");
 
-    if (result.status < 200 || result.status >= 300) {
+    const clientId = process.env.MISTICPAY_CLIENT_ID;
+    const clientSecret = process.env.MISTICPAY_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      console.error("Missing MisticPay credentials");
       return {
-        statusCode: 502,
-        body: JSON.stringify({
-          error: "Erro na API da MisticPay",
-          details: result.body
-        }),
+        statusCode: 500,
+        body: JSON.stringify({ error: "Configuração do servidor incompleta (MisticPay credentials missing)." }),
       };
     }
 
-    const data = result.body.data;
+    // De acordo com a documentação da MisticPay extraída:
+    // POST /api/transactions/create
+    // Headers: ci: client_id, cs: client_secret
+    const response = await fetch("https://api.misticpay.com/api/transactions/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ci": clientId,
+        "cs": clientSecret,
+      },
+      body: JSON.stringify({
+        amount: amount,
+        payerName: name,
+        payerDocument: cpf,
+        transactionId: transactionId,
+        description: productName || "Compra na Loja",
+      }),
+    });
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("MisticPay API error:", data);
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({ error: data.message || "Erro na API da MisticPay" }),
+      };
+    }
+
+    // A resposta esperada tem: data.copyPaste e data.qrCodeBase64
     return {
       statusCode: 200,
       body: JSON.stringify({
-        transactionId: data.transactionId,
-        pixCode: data.copyPaste,
-        qrCodeBase64: data.qrCodeBase64,
-        qrCodeImage: data.qrcodeUrl,
+        transactionId: data.data.transactionId,
+        pixCode: data.data.copyPaste,
+        qrCodeBase64: data.data.qrCodeBase64,
+        qrCodeImage: data.data.qrcodeUrl,
       }),
     };
-  } catch (err) {
+  } catch (error) {
+    console.error("Internal error:", error);
     return {
-      statusCode: 502,
-      body: JSON.stringify({ error: "Erro de comunicação com a MisticPay." }),
+      statusCode: 500,
+      body: JSON.stringify({ error: "Erro interno ao processar o Pix." }),
     };
   }
 };
