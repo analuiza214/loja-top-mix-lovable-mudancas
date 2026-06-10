@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { X, AlertCircle, RefreshCw, CreditCard, Copy, CheckCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getStoredUtms } from "@/lib/tracking";
-
+import { pushEcommerceEvent } from "@/lib/tracking";
 
 type Phase = "loading" | "reveal" | "content";
 
@@ -142,56 +141,31 @@ function Countdown({ seconds }: { seconds: number }) {
 
 // ── Tracking helper ──────────────────────────────────────────────────────────
 function fireTrackingEvents(amount: number, productName: string) {
-  const utms = getStoredUtms();
-  const eventId = `purchase_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
   // Facebook Pixel — Purchase
   try {
-    const fbq = (window as any).fbq;
+    const fbq = (window as unknown as Record<string, unknown>).fbq as ((...a: unknown[]) => void) | undefined;
     if (typeof fbq === "function") {
       fbq("track", "Purchase", {
         value: amount,
         currency: "BRL",
         content_name: productName,
         content_type: "product",
-        eventID: eventId,
-        ...utms
       });
     }
   } catch { /* silently ignore */ }
 
   // Utmify — Purchase
   try {
-    const utmify = (window as any).utmify;
+    const utmify = (window as unknown as Record<string, unknown>).utmify as ((...a: unknown[]) => void) | undefined;
     if (typeof utmify === "function") {
       utmify("track", "Purchase", {
         value: amount,
         currency: "BRL",
         content_name: productName,
-        event_id: eventId,
-        ...utms
       });
     }
   } catch { /* silently ignore */ }
-
-  // Also send to our own tracking endpoint for server-side conversions if available
-  fetch('/api/tracking/purchase', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      event_name: 'Purchase',
-      event_id: eventId,
-      value: amount,
-      currency: 'BRL',
-      product_name: productName,
-      utms: utms,
-      timestamp: Date.now(),
-      user_agent: navigator.userAgent,
-      url: window.location.href
-    })
-  }).catch(() => {});
 }
-
 
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Success() {
@@ -215,6 +189,7 @@ export default function Success() {
 
   const hasFetched = useRef(false);
   const trackingFired = useRef(false);
+  const pixGeneratedFired = useRef(false);
   const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCount = useRef(0);
   const MAX_POLLS = 72; // 6 minutes at 5s intervals
@@ -266,6 +241,28 @@ export default function Success() {
     }
     gen();
   }, [payment]);
+
+  // pix_generated — dispara uma vez quando o QR Code é exibido
+  useEffect(() => {
+    if (!pixData || pixGeneratedFired.current) return;
+    pixGeneratedFired.current = true;
+    pushEcommerceEvent("pix_generated", {
+      transaction_id: pixData.transactionId || "",
+      currency: "BRL",
+      value: orderAmount,
+      payment_type: "pix",
+      items: [
+        {
+          item_id: "topmix_order",
+          item_name: orderProductName,
+          price: orderAmount,
+          quantity: 1,
+        },
+      ],
+    }, {
+      event_id: (pixData.transactionId || "pix") + "_pix_generated",
+    });
+  }, [pixData, orderAmount, orderProductName]);
 
   // ── Poll payment status once we have a transactionId ──
   useEffect(() => {
@@ -623,7 +620,7 @@ export default function Success() {
             {pixData && !pixLoading && (
               <div className="space-y-4">
                 {/* Polling status indicator */}
-                <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5 mb-2">
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                   <span className="relative flex h-2.5 w-2.5 shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
@@ -637,7 +634,7 @@ export default function Success() {
                     <div className="border-2 border-green-100 rounded-2xl p-3 bg-white shadow-sm inline-block">
                       <img src={qrSrc} alt="QR Code PIX" className="w-52 h-52 object-contain" />
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-2.5 font-normal">Escaneie com a Câmera do banco ou copie o código pronto.</p>
+                    <p className="text-[11px] text-gray-400 mt-2 font-medium">Escaneie com a câmera do banco</p>
                   </div>
                 )}
 
@@ -693,4 +690,3 @@ export default function Success() {
     </motion.div>
   );
 }
-
