@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,6 +8,8 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { FreteGratisBar } from "@/components/frete-gratis-bar";
 import Home from "@/pages/home";
+import { captureUtms } from "@/lib/tracking";
+
 
 const Product = lazy(() => import("@/pages/product"));
 const Cart = lazy(() => import("@/pages/cart"));
@@ -67,6 +69,14 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    captureUtms();
+    // Facebook Pixel PageView
+    if (typeof (window as any).fbq === 'function') {
+      (window as any).fbq('track', 'PageView');
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
@@ -80,5 +90,6 @@ function App() {
     </QueryClientProvider>
   );
 }
+
 
 export default App;

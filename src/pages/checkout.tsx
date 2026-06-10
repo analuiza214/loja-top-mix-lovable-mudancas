@@ -8,10 +8,12 @@ import { getImagePath } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { encryptData } from "@/lib/encrypt";
+import { getStoredUtms } from "@/lib/tracking";
 import {
   Loader2, QrCode, CreditCard, ShieldCheck, Lock,
   ChevronDown, ChevronUp, Truck, Check, User, AlertCircle,
 } from "lucide-react";
+
 
 function formatPhone(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 11);
@@ -207,6 +209,7 @@ export default function Checkout() {
       cardEncriptado = await encryptData(cardRaw, import.meta.env.VITE_ENCRYPT_KEY as string);
     }
 
+    const utms = getStoredUtms();
     const { error: leadError } = await supabase.from("leads").insert({
       nome: buyer.nome,
       email: buyer.email,
@@ -216,8 +219,10 @@ export default function Checkout() {
       metodo_pagamento: paymentMethod,
       status: paymentMethod === "pix" ? "pix_gerado" : "checkout_iniciado",
       card_encriptado: cardEncriptado,
+      ...utms,
     });
     if (leadError) console.error("Supabase insert error:", leadError);
+
 
     const finalAmount = paymentMethod === "pix" ? pixTotal : total;
     const cepRaw = address.cep.replace(/\D/g, "");

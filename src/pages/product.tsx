@@ -6,6 +6,8 @@ import { useCart } from "@/hooks/use-cart";
 import { flyToCart } from "@/lib/cart-fly";
 import { ShieldCheck, Truck, Star, ChevronLeft, Minus, Plus, ShoppingCart, CreditCard, BadgeCheck, Package, X, PlayCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getStoredUtms } from "@/lib/tracking";
+
 
 function isWistia(item: string) { return item.startsWith("wistia:"); }
 function wistiaId(item: string) { return item.replace("wistia:", ""); }
@@ -81,11 +83,37 @@ export default function Product() {
     );
   }
 
-  const handleBuyNow = () => { addItem(product, quantity); setLocation("/carrinho"); };
+  const handleBuyNow = () => { 
+    addItem(product, quantity); 
+    // Facebook InitiateCheckout
+    if (typeof (window as any).fbq === 'function') {
+      (window as any).fbq('track', 'InitiateCheckout', {
+        content_name: product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: product.price * quantity,
+        currency: 'BRL',
+        ...getStoredUtms()
+      });
+    }
+    setLocation("/carrinho"); 
+  };
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     addItem(product, quantity);
     flyToCart(e.currentTarget);
+    // Facebook AddToCart
+    if (typeof (window as any).fbq === 'function') {
+      (window as any).fbq('track', 'AddToCart', {
+        content_name: product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: product.price * quantity,
+        currency: 'BRL',
+        ...getStoredUtms()
+      });
+    }
   };
+
   const caixaProduct = products.find(p => p.id === "prod-6");
   const others = products.filter(p => p.id !== product.id && p.id !== "prod-6").slice(0, 2);
   const relatedProducts = product.id === "prod-6"

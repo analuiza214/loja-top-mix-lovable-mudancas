@@ -5,6 +5,8 @@ import { getImagePath } from "@/lib/utils";
 import { ShieldCheck, Truck, Star, BadgeCheck, ChevronLeft, ChevronRight, AlertTriangle, ShoppingBag, CreditCard } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { WistiaPlayer } from "@/components/wistia-player";
+import { appendUtmsToUrl, getStoredUtms } from "@/lib/tracking";
+
 
 // ── Live purchase notifications ──
 const buyers = [
@@ -545,14 +547,27 @@ export default function Home() {
               <div className="text-xs text-gray-400">{mainProduct.installment} no cartão sem juros</div>
             </div>
 
-            <Link href={`/produto/${mainProduct.slug}`} className="block">
+            <Link href={appendUtmsToUrl(`/produto/${mainProduct.slug}`)} className="block">
               <button
                 className="pulse-blue w-full py-4 rounded-xl font-black text-base text-white shadow-md hover:opacity-90 active:scale-95 transition-all"
                 style={{ background: "linear-gradient(135deg, #1e3a8a, #2563eb, #1d4ed8)" }}
+                onClick={() => {
+                  if (typeof (window as any).fbq === 'function') {
+                    (window as any).fbq('track', 'InitiateCheckout', {
+                      content_name: mainProduct.name,
+                      content_ids: [mainProduct.id],
+                      content_type: 'product',
+                      value: mainProduct.price,
+                      currency: 'BRL',
+                      ...getStoredUtms()
+                    });
+                  }
+                }}
               >
                 🛒 COMPRAR AGORA
               </button>
             </Link>
+
 
             <StockSection />
 
@@ -628,7 +643,7 @@ export default function Home() {
                   ) : (
                     <div className="mb-1.5 h-[22px]" />
                   )}
-                  <Link href={`/produto/${product.slug}`} className="flex-1">
+                  <Link href={appendUtmsToUrl(`/produto/${product.slug}`)} className="flex-1">
                     <div
                       className="bg-white rounded-xl overflow-hidden transition-all duration-200 cursor-pointer flex flex-col h-full hover:scale-[1.02] hover:shadow-xl"
                       style={cardStyle}
@@ -674,7 +689,7 @@ export default function Home() {
             <p className="text-green-200 text-xs font-bold tracking-widest uppercase mb-1">Desconto Exclusivo</p>
             <h3 className="text-xl sm:text-2xl font-black text-white mb-1">10% OFF PAGANDO NO PIX</h3>
             <p className="text-green-100 text-sm mb-4">Aprovação instantânea. Sem taxas. Frete grátis.</p>
-            <Link href="/produto/album-250-figurinhas">
+            <Link href={appendUtmsToUrl("/produto/album-250-figurinhas")}>
               <button className="px-7 py-2.5 rounded-xl font-black text-sm bg-white hover:bg-gray-50 transition-all shadow"
                 style={{ color: "#166534" }}>
                 QUERO O DESCONTO PIX
@@ -807,7 +822,7 @@ export default function Home() {
             <span style={{ color: "#E09400" }}>sem o álbum da Copa!</span>
           </h2>
           <p className="text-gray-500 text-sm">Estoque limitado. Produto 100% original Panini.</p>
-          <Link href="/produto/album-250-figurinhas">
+          <Link href={appendUtmsToUrl("/produto/album-250-figurinhas")}>
             <button className="w-full sm:w-auto px-10 py-4 rounded-xl font-black text-base text-white shadow-md hover:opacity-90 active:scale-95 transition-all"
               style={{ background: "linear-gradient(135deg, #1e3a8a, #2563eb, #1d4ed8)" }}>
               GARANTIR MEU KIT — R$ 49,00
